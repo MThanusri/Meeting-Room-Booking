@@ -41,5 +41,24 @@ app.post('/api/bookings', async (req, res) => {
     res.status(400).json({ error: 'Failed to create booking' });
   }
 });
+// Add this in your Express backend (server/index.js)
+app.delete('/api/bookings/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const email = req.query.email;
+
+    const booking = await Booking.findById(id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+    if (booking.userEmail !== email) {
+      return res.status(403).json({ error: 'You can only delete your own bookings' });
+    }
+
+    await Booking.findByIdAndDelete(id);
+    res.status(200).json({ message: 'Booking deleted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error during deletion' });
+  }
+});
 
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
