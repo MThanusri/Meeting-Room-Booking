@@ -6,7 +6,7 @@ import '../styles/bookingpage.css';
 
 const generateTimeSlots = () => {
   const slots = [];
-  for (let h = 0; h < 24; h++) {
+  for (let h = 9; h <= 17; h++) {
     for (let m = 0; m < 60; m += 30) {
       const hour = h.toString().padStart(2, '0');
       const minute = m.toString().padStart(2, '0');
@@ -26,11 +26,15 @@ const BookingPage = () => {
   });
 
   const navigate = useNavigate();
+  const userEmail = localStorage.getItem('userEmail');
+  const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     const storedRoomId = localStorage.getItem('selectedRoomId');
     const storedCapacity = localStorage.getItem('selectedRoomCapacity');
     const storedRoomName = localStorage.getItem('selectedRoomName');
+
+    setForm(prev => ({ ...prev, date: today }));
 
     if (storedRoomId) {
       setForm(prev => ({ ...prev, roomId: storedRoomId }));
@@ -89,7 +93,7 @@ const BookingPage = () => {
     const payload = {
       ...form,
       userName: localStorage.getItem('userName') || 'User',
-      userEmail: localStorage.getItem('userEmail') || 'test@example.com'
+      userEmail: userEmail || 'test@example.com'
     };
 
     axios.post('http://localhost:5000/api/bookings', payload)
@@ -99,6 +103,16 @@ const BookingPage = () => {
           .then(res => setBookings(res.data));
       })
       .catch(err => alert(err.response?.data?.message || 'Booking failed'));
+  };
+
+  const handleDelete = (id) => {
+    axios.delete(`http://localhost:5000/api/bookings/${id}?email=${userEmail}`)
+      .then(() => {
+        alert('Booking deleted successfully');
+        axios.get('http://localhost:5000/api/bookings')
+          .then(res => setBookings(res.data));
+      })
+      .catch(() => alert('Failed to delete booking. It may no longer exist.'));
   };
 
   const selectedRoom = rooms.find(r => r._id === form.roomId);
@@ -148,6 +162,9 @@ const BookingPage = () => {
         <input
           className="form-control mb-3"
           type="date"
+          value={form.date}
+          min={today}
+          max={today}
           onChange={e => setForm({ ...form, date: e.target.value })}
         />
 
@@ -182,7 +199,12 @@ const BookingPage = () => {
         {bookings.filter(b => b.date === form.date).length === 0 && <p className="text-center text-muted">No bookings yet.</p>}
         {bookings.filter(b => b.date === form.date).map(b => (
           <div key={b._id} className="timeline-entry p-2 mb-2 border rounded bg-light shadow-sm">
-            <div className="fw-bold text-dark">{b.title}</div>
+            <div className="fw-bold text-dark d-flex justify-content-between">
+              <span>{b.title}</span>
+              {b.userEmail === userEmail && (
+                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(b._id)}>Delete</button>
+              )}
+            </div>
             <div className="text-secondary small">{b.startTime} to {b.endTime} — <em>{b.userName}</em></div>
           </div>
         ))}
