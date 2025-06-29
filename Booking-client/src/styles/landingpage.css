@@ -1,0 +1,35 @@
+/* Ensures full height and width centering */
+.landing-wrapper {
+  height: 100vh;
+  width: 100vw;
+  background: linear-gradient(to bottom, #d0e6f7, #eaf4fb);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+/* Card box */
+.landing-container {
+  background: #fff;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  max-width: 450px;
+  width: 100%;
+  text-align: center;
+}
+
+.landing-container h1 {
+  font-size: 1.8rem;
+  color: #121212;
+  margin-bottom: 10px;
+}
+
+.landing-container p {
+  font-size: 1rem;
+  color: #444;
+  margin-bottom: 25px;
+}
