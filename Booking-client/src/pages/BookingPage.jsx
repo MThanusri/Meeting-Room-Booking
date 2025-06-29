@@ -4,23 +4,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import '../styles/bookingpage.css';
 
-const generateTimeSlots = () => {
-  const slots = [];
-  for (let h = 9; h <= 17; h++) {
-    for (let m = 0; m < 60; m += 30) {
-      const hour = h.toString().padStart(2, '0');
-      const minute = m.toString().padStart(2, '0');
-      slots.push(`${hour}:${minute}`);
-    }
-  }
-  return slots;
-};
-
-const timeSlots = generateTimeSlots();
-
 const BookingPage = () => {
   const [rooms, setRooms] = useState([]);
-  const [bookings, setBookings] = useState([]);
   const [form, setForm] = useState({
     roomId: '', title: '', attendees: '', equipment: [], date: '', startTime: '', endTime: ''
   });
@@ -33,41 +18,27 @@ const BookingPage = () => {
     const storedRoomId = localStorage.getItem('selectedRoomId');
     const storedCapacity = localStorage.getItem('selectedRoomCapacity');
     const storedRoomName = localStorage.getItem('selectedRoomName');
+    const storedStart = localStorage.getItem('startTime');
+    const storedEnd = localStorage.getItem('endTime');
 
-    setForm(prev => ({ ...prev, date: today }));
+    setForm(prev => ({
+      ...prev,
+      roomId: storedRoomId,
+      date: today,
+      startTime: storedStart || '',
+      endTime: storedEnd || ''
+    }));
 
-    if (storedRoomId) {
-      setForm(prev => ({ ...prev, roomId: storedRoomId }));
-      axios.get('http://localhost:5000/api/rooms')
-        .then(res => {
-          const room = res.data.find(r => r._id === storedRoomId);
-          if (room) {
-            setRooms([room]);
-          } else {
-            setRooms([{ _id: storedRoomId, name: storedRoomName || 'Selected Room', capacity: parseInt(storedCapacity) || 0, equipment: [] }]);
-          }
-        });
-    }
-
-    axios.get('http://localhost:5000/api/bookings')
-      .then(res => setBookings(res.data))
-      .catch(err => console.error('Failed to fetch bookings:', err));
+    axios.get('http://localhost:5000/api/rooms')
+      .then(res => {
+        const room = res.data.find(r => r._id === storedRoomId);
+        if (room) {
+          setRooms([room]);
+        } else {
+          setRooms([{ _id: storedRoomId, name: storedRoomName || 'Selected Room', capacity: parseInt(storedCapacity) || 0, equipment: [] }]);
+        }
+      });
   }, []);
-
-  const validateTime = (start, end) => {
-    const s = new Date(`1970-01-01T${start}:00`);
-    const e = new Date(`1970-01-01T${end}:00`);
-    const diff = (e - s) / (1000 * 60);
-    return diff >= 30 && diff <= 240;
-  };
-
-  const isOverlapping = () => {
-    return bookings.some(b =>
-      b.roomId === form.roomId &&
-      b.date === form.date &&
-      !(form.endTime <= b.startTime || form.startTime >= b.endTime)
-    );
-  };
 
   const handleEquipmentChange = (item) => {
     const updated = form.equipment.includes(item)
@@ -82,14 +53,6 @@ const BookingPage = () => {
       return alert(`Attendees should not exceed the room's capacity of ${maxCapacity} people.`);
     }
 
-    if (!validateTime(form.startTime, form.endTime)) {
-      return alert('Booking must be between 30 minutes and 4 hours.');
-    }
-
-    if (isOverlapping()) {
-      return alert('Selected time overlaps with an existing booking for this room.');
-    }
-
     const payload = {
       ...form,
       userName: localStorage.getItem('userName') || 'User',
@@ -99,20 +62,9 @@ const BookingPage = () => {
     axios.post('http://localhost:5000/api/bookings', payload)
       .then(() => {
         alert('Booking successful!');
-        axios.get('http://localhost:5000/api/bookings')
-          .then(res => setBookings(res.data));
+        navigate('/home');
       })
       .catch(err => alert(err.response?.data?.message || 'Booking failed'));
-  };
-
-  const handleDelete = (id) => {
-    axios.delete(`http://localhost:5000/api/bookings/${id}?email=${userEmail}`)
-      .then(() => {
-        alert('Booking deleted successfully');
-        axios.get('http://localhost:5000/api/bookings')
-          .then(res => setBookings(res.data));
-      })
-      .catch(() => alert('Failed to delete booking. It may no longer exist.'));
   };
 
   const selectedRoom = rooms.find(r => r._id === form.roomId);
@@ -159,55 +111,10 @@ const BookingPage = () => {
           placeholder="Attendees"
           onChange={e => setForm({ ...form, attendees: e.target.value })}
         />
-        <input
-          className="form-control mb-3"
-          type="date"
-          value={form.date}
-          min={today}
-          max={today}
-          onChange={e => setForm({ ...form, date: e.target.value })}
-        />
 
-        <div className="d-flex gap-3 mb-3">
-          <select
-            className="form-select"
-            value={form.startTime}
-            onChange={e => setForm({ ...form, startTime: e.target.value })}
-          >
-            <option value="">Start Time</option>
-            {timeSlots.map(time => (
-              <option key={time} value={time}>{time}</option>
-            ))}
-          </select>
-          <select
-            className="form-select"
-            value={form.endTime}
-            onChange={e => setForm({ ...form, endTime: e.target.value })}
-          >
-            <option value="">End Time</option>
-            {timeSlots.map(time => (
-              <option key={time} value={time}>{time}</option>
-            ))}
-          </select>
-        </div>
+        <p className="text-muted">Booking for: {form.date}, {form.startTime} to {form.endTime}</p>
 
         <button className="btn btn-primary w-100" onClick={handleBooking}>Confirm Booking</button>
-      </div>
-
-      <div className="booking-timeline mt-4">
-        <h5 className="text-center text-primary mb-3">📅 Today's Bookings</h5>
-        {bookings.filter(b => b.date === form.date).length === 0 && <p className="text-center text-muted">No bookings yet.</p>}
-        {bookings.filter(b => b.date === form.date).map(b => (
-          <div key={b._id} className="timeline-entry p-2 mb-2 border rounded bg-light shadow-sm">
-            <div className="fw-bold text-dark d-flex justify-content-between">
-              <span>{b.title}</span>
-              {b.userEmail === userEmail && (
-                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(b._id)}>Delete</button>
-              )}
-            </div>
-            <div className="text-secondary small">{b.startTime} to {b.endTime} — <em>{b.userName}</em></div>
-          </div>
-        ))}
       </div>
     </div>
   );
