@@ -1,8 +1,7 @@
-<<<<<<< HEAD
-📘 GrubGate Meeting Room Booking System
+📘 Meeting Room Booking System
 This is a full-stack web application built for the GrubGate Technical Assessment. The system allows employees to book meeting rooms with specific time, attendees, and equipment preferences. It prevents time conflicts and respects capacity limits.
 
-# GrubGate Meeting Room Booking System
+# Meeting Room Booking System
 
 ## Tech Stack
 - Frontend: React + Bootstrap (Vite)
@@ -15,6 +14,3 @@ This is a full-stack web application built for the GrubGate Technical Assessment
 - Validate time (min 30 mins, max 4 hours)
 - Display existing bookings per room
 - Responsive UI with modern dropdowns
-=======
-# Meeting-Room-Booking
->>>>>>> 2297d4c7e8658e7ee40a5250370106196166dfe0
